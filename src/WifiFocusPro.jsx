@@ -96,6 +96,7 @@ const WifiFocusPro = () => {
       particles.push(new Particle());
     }
 
+    let animationId;
     const animate = () => {
       ctx.fillStyle = 'rgba(10, 15, 35, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -106,7 +107,7 @@ const WifiFocusPro = () => {
         p.draw();
       });
 
-      requestAnimationFrame(animate);
+      animationId = requestAnimationFrame(animate);
     };
 
     animate();
@@ -117,11 +118,16 @@ const WifiFocusPro = () => {
     };
 
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationId);
+    };
   }, []);
 
-  // Simulate network updates
+  // Simulate network updates (only when logged in)
   useEffect(() => {
+    if (!isLoggedIn) return;
+
     const interval = setInterval(() => {
       setNetworkData(prev => ({
         ...prev,
@@ -135,7 +141,7 @@ const WifiFocusPro = () => {
     }, 2000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isLoggedIn]);
 
   // Login handler
   const handleLogin = async (e) => {
@@ -157,8 +163,8 @@ const WifiFocusPro = () => {
     setTimeout(() => setShowFocusAnimation(false), 2000);
   };
 
-  // Glass card component
-  const GlassCard = ({ children, className = '' }) => (
+  // Glass card component (memoized to prevent unnecessary re-renders)
+  const GlassCard = React.memo(({ children, className = '' }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -173,7 +179,8 @@ const WifiFocusPro = () => {
     >
       {children}
     </motion.div>
-  );
+  ));
+  GlassCard.displayName = 'GlassCard';
 
   // Login Page
   if (!isLoggedIn) {
